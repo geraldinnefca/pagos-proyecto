@@ -23,7 +23,7 @@ public interface PagoRepository extends JpaRepository<Pago, Long> {
     //Verificar si una subasta ya tiene un pago registrado
     boolean existsByIdSubasta(Long idSubasta);
 
-    //Buscar el pago específico de una usuario para una subasta
+    //Buscar el pago específico de un usuario para una subasta
     Optional<Pago> findByIdSubastaAndIdUsuario(Long idSubasta, Long idUsuario);
 
     //Buscar pagos realizados con un método específico
