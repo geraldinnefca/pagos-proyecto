@@ -4,7 +4,6 @@ import cl.sda1085.pagos.dto.PagoRequestDTO;
 import cl.sda1085.pagos.dto.PagoResponseDTO;
 import cl.sda1085.pagos.model.Pago;
 import cl.sda1085.pagos.repository.PagoRepository;
-import com.fasterxml.jackson.annotation.OptBoolean;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
