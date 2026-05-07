@@ -16,7 +16,7 @@ import java.math.BigDecimal;
 
 public class Pago {
 
-    @Id
+    @Id //*
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
