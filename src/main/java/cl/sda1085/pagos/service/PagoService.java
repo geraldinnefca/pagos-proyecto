@@ -2,9 +2,12 @@ package cl.sda1085.pagos.service;
 
 import cl.sda1085.pagos.dto.PagoRequestDTO;
 import cl.sda1085.pagos.dto.PagoResponseDTO;
+import cl.sda1085.pagos.exception.PagoDuplicadoException;
+import cl.sda1085.pagos.exception.PagoNoEncontradoException;
 import cl.sda1085.pagos.model.Pago;
 import cl.sda1085.pagos.repository.PagoRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -14,6 +17,8 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
+
 public class PagoService {
 
     //Conexión con 'repository'
@@ -51,15 +56,21 @@ public class PagoService {
     }
 
     //Obtener pago por ID
-    public Optional<PagoResponseDTO> obtenerPorId(Long id){
+    public PagoResponseDTO obtenerPorId(Long id){
         return pagoRepository.findById(id)
-                .map(this::mapToResponseDTO);
+                .map(this::mapToResponseDTO)
+                .orElseThrow(() -> new PagoNoEncontradoException(id));
+
     }
 
     //Crear (guardar) pago
     public PagoResponseDTO guardar(PagoRequestDTO dto){
-        if (pagoRepository.existsByIdSubasta(dto.getIdSubasta())){
-            throw new RuntimeException("Esta subasta ya tiene un pago registrado.");
+        log.info("Iniciando registro de pago: Subasta #{} - Usuario #{} - Monto: ${}",
+                dto.getIdSubasta(), dto.getIdUsuario(), dto.getMonto());
+
+        if (pagoRepository.existsByIdSubasta(dto.getIdSubasta())) {
+            log.warn("BLOQUEADO: Intento de pago duplicado para la subasta ID: {}", dto.getIdSubasta());
+            throw new PagoDuplicadoException(dto.getIdSubasta());
         }
 
         Pago pago = new Pago();
@@ -70,26 +81,28 @@ public class PagoService {
         pago.setEstado("PENDIENTE");  //Todo pago inicia como 'PENDIENTE'
 
         //Guardar en la base de datos
-        Pago pagoGuardado = (pagoRepository.save(pago));
+        Pago pagoGuardado = pagoRepository.save(pago);
 
         //Devolver la respuesta como DTO
+        log.info("Pago procesado exitosamente. ID Transacción: {}", pagoGuardado.getId());
         return convertirADTO(pagoGuardado);
     }
 
     //Actualizar pago
-    public Optional<PagoResponseDTO> actualizar(Long id, PagoRequestDTO dto){
+    public PagoResponseDTO actualizar(Long id, PagoRequestDTO dto){
         return pagoRepository.findById(id).map(pagoExistente -> {
-           pagoExistente.setMonto(dto.getMonto());
-           pagoExistente.setMetodo(dto.getMetodo());
-
-           //El estado suele actualizarse mediante un método específico de "confirmación"
+            pagoExistente.setMonto(dto.getMonto());
+            pagoExistente.setMetodo(dto.getMetodo());
+            log.info("Actualizando pago ID: {}", id);
             return mapToResponseDTO(pagoRepository.save(pagoExistente));
-        });
+        }).orElseThrow(() -> new PagoNoEncontradoException(id));
     }
 
     //Eliminar pago
     public void eliminar(Long id){
+        log.warn("Eliminando registro de pago con ID: {}", id);
         pagoRepository.deleteById(id);
+        log.info("Confirmación: Pago ID {} eliminado de la base de datos.", id);
     }
 
 
@@ -117,11 +130,13 @@ public class PagoService {
     }
 
     //Cambiar estado del pago
-    public Optional<PagoResponseDTO> actualizarEstado(Long id, String nuevoEstado){
+    public PagoResponseDTO actualizarEstado(Long id, String nuevoEstado) {
         return pagoRepository.findById(id).map(pago -> {
             pago.setEstado(nuevoEstado);
+            log.info("Cambiando estado de pago ID: {} a {}", id, nuevoEstado);
             return mapToResponseDTO(pagoRepository.save(pago));
-        });
+        }).orElseThrow(() -> new PagoNoEncontradoException(id));
+
     }
 
     //Verificar existencia del pago

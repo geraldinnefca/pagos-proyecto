@@ -36,4 +36,22 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(error, HttpStatus.INTERNAL_SERVER_ERROR); // Retorna 500 Internal Server Error
     }
 
+    @ExceptionHandler(PagoDuplicadoException.class)
+    public ResponseEntity<Map<String, String>> handlePagoDuplicado(PagoDuplicadoException ex) {
+        Map<String, String> error = new HashMap<>();
+        error.put("error", "Conflicto en el pago");
+        error.put("mensaje", ex.getMessage());
+        return new ResponseEntity<>(error, HttpStatus.CONFLICT);
+    }
+
+    @ExceptionHandler(PagoNoEncontradoException.class)
+    public ResponseEntity<Map<String, String>> handlePagoNoEncontrado(PagoNoEncontradoException ex) {
+        Map<String, String> error = new HashMap<>();
+        error.put("error", "Pago no encontrado");
+        error.put("mensaje", ex.getMessage());
+        return new ResponseEntity<>(error, HttpStatus.NOT_FOUND); // Retorna 404
+    }
+
+
+
 }

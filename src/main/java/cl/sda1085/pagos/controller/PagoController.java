@@ -29,9 +29,7 @@ public class PagoController {
 
     @GetMapping("/{id}")
     public ResponseEntity<PagoResponseDTO> obtenerPorId(@PathVariable Long id) {
-        return pagoService.obtenerPorId(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+        return ResponseEntity.ok(pagoService.obtenerPorId(id));
     }
 
     @PostMapping
@@ -41,9 +39,7 @@ public class PagoController {
 
     @PutMapping("/{id}")
     public ResponseEntity<PagoResponseDTO> actualizar(@PathVariable Long id, @Valid @RequestBody PagoRequestDTO dto) {
-        return pagoService.actualizar(id, dto)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+        return ResponseEntity.ok(pagoService.actualizar(id, dto));
     }
 
     @DeleteMapping("/{id}")
@@ -68,9 +64,7 @@ public class PagoController {
             @PathVariable Long id,
             @RequestParam String nuevoEstado) {
 
-        return pagoService.actualizarEstado(id, nuevoEstado)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+        return ResponseEntity.ok(pagoService.actualizarEstado(id, nuevoEstado));
     }
 
 }
