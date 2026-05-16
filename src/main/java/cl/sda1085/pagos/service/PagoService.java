@@ -9,6 +9,7 @@ import cl.sda1085.pagos.repository.PagoRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -18,7 +19,6 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-
 public class PagoService {
 
     //Conexión con 'repository'
@@ -26,30 +26,24 @@ public class PagoService {
 
     //Método de apoyo para encapsulamiento de datos
     private PagoResponseDTO mapToResponseDTO(Pago pago){
-        return new PagoResponseDTO(
-                pago.getId(),
-                pago.getIdSubasta(),
-                pago.getIdUsuario(),
-                pago.getMonto(),
-                pago.getEstado(),
-                pago.getMetodo()
-        );
+        return PagoResponseDTO.builder()
+                .id(pago.getId())
+                .idSubasta(pago.getIdSubasta())
+                .idUsuario(pago.getIdUsuario())
+                .monto(pago.getMonto())
+                .estado(pago.getEstado())
+                .metodo(pago.getMetodo())
+                .build();
     }
 
-    //Método auxiliar de conversión (reutilizable)
-    private PagoResponseDTO convertirADTO(Pago pago){
-        return new PagoResponseDTO(
-                pago.getId(),
-                pago.getIdSubasta(),
-                pago.getIdUsuario(),
-                pago.getMonto(),
-                pago.getEstado(),
-                pago.getMetodo()
-        );
-    }
+
+    //------------------------------
+    //CRUD estándar
+    //------------------------------
 
     //Obtener todos los pagos
     public List<PagoResponseDTO> obtenerTodos(){
+        log.info("Consultando todos los registros de pago en el sistema");
         return pagoRepository.findAll().stream()
                 .map(this::mapToResponseDTO)
                 .collect(Collectors.toList());
@@ -57,13 +51,15 @@ public class PagoService {
 
     //Obtener pago por ID
     public PagoResponseDTO obtenerPorId(Long id){
+        log.info("Buscando registro de pago con ID: {}", id);
         return pagoRepository.findById(id)
                 .map(this::mapToResponseDTO)
                 .orElseThrow(() -> new PagoNoEncontradoException(id));
 
     }
 
-    //Crear (guardar) pago
+    //Crear (guardar) nuevo pago
+    @Transactional
     public PagoResponseDTO guardar(PagoRequestDTO dto){
         log.info("Iniciando registro de pago: Subasta #{} - Usuario #{} - Monto: ${}",
                 dto.getIdSubasta(), dto.getIdUsuario(), dto.getMonto());
@@ -85,10 +81,11 @@ public class PagoService {
 
         //Devolver la respuesta como DTO
         log.info("Pago procesado exitosamente. ID Transacción: {}", pagoGuardado.getId());
-        return convertirADTO(pagoGuardado);
+        return mapToResponseDTO(pagoGuardado);
     }
 
-    //Actualizar pago
+    //Actualizar pago existente
+    @Transactional
     public PagoResponseDTO actualizar(Long id, PagoRequestDTO dto){
         return pagoRepository.findById(id).map(pagoExistente -> {
             pagoExistente.setMonto(dto.getMonto());
@@ -99,6 +96,7 @@ public class PagoService {
     }
 
     //Eliminar pago
+    @Transactional
     public void eliminar(Long id){
         log.warn("Eliminando registro de pago con ID: {}", id);
         pagoRepository.deleteById(id);
@@ -106,10 +104,13 @@ public class PagoService {
     }
 
 
+    //------------------------------
     //CRUD personalizado
+    //------------------------------
 
     //Buscar pagos asociados a una subasta específica
     public List<PagoResponseDTO> obtenerPorSubasta(Long idSubasta){
+        log.info("Filtrando pagos asociados a la subasta #{}", idSubasta);
         return pagoRepository.findByIdSubasta(idSubasta).stream()
                 .map(this::mapToResponseDTO)
                 .collect(Collectors.toList());
@@ -117,6 +118,7 @@ public class PagoService {
 
     //Buscar historial de pagos de un usuario
     public List<PagoResponseDTO> obtenerPorUsuario(Long idUsuario){
+        log.info("Consultando historial de pagos del usuario #{}", idUsuario);
         return pagoRepository.findByIdUsuario(idUsuario).stream()
                 .map(this::mapToResponseDTO)
                 .collect(Collectors.toList());
@@ -124,19 +126,20 @@ public class PagoService {
 
     //Filtrar pagos por estado
     public List<PagoResponseDTO> obtenerPorEstado(String estado){
+        log.info("Buscando transacciones con estado: {}", estado);
         return pagoRepository.findByEstado(estado).stream()
                 .map(this::mapToResponseDTO)
                 .collect(Collectors.toList());
     }
 
     //Cambiar estado del pago
+    @Transactional
     public PagoResponseDTO actualizarEstado(Long id, String nuevoEstado) {
+        log.info("Cambiando estado de pago ID: {} a {}", id, nuevoEstado);
         return pagoRepository.findById(id).map(pago -> {
             pago.setEstado(nuevoEstado);
-            log.info("Cambiando estado de pago ID: {} a {}", id, nuevoEstado);
             return mapToResponseDTO(pagoRepository.save(pago));
         }).orElseThrow(() -> new PagoNoEncontradoException(id));
-
     }
 
     //Verificar existencia del pago
@@ -146,6 +149,7 @@ public class PagoService {
 
     //Buscar pago específico
     public Optional<PagoResponseDTO> buscarPagoEspecifico(Long idSubasta, Long idUsuario){
+        log.info("Verificando pago de Usuario #{} en Subasta #{}", idUsuario, idSubasta);
         return pagoRepository.findByIdSubastaAndIdUsuario(idSubasta, idUsuario)
                 .map(this::mapToResponseDTO);
     }
@@ -159,6 +163,7 @@ public class PagoService {
 
     //Buscar pagos que superen un monto
     public List<PagoResponseDTO> buscarPagosMayoresA(BigDecimal monto){
+        log.info("Filtrando pagos con montos superiores a: ${}", monto);
         return pagoRepository.findByMontoGreaterThan(monto).stream()
                 .map(this::mapToResponseDTO)
                 .collect(Collectors.toList());
