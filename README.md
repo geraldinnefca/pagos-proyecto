@@ -1,4 +1,8 @@
-# Microservicio de Gestión de Pagos (`pagos-proyecto`)
+# Microservicio de Gestión de Pagos ('pagos')
+
+## Integrantes
+* **Gonzalo Hormazábal**
+* **Geraldinne González**
 
 ## Descripción
 Módulo encargado de procesar y auditar los flujos financieros una vez adjudicada una subasta. Implementa un estricto control transaccional para asegurar la consistencia del dinero.
